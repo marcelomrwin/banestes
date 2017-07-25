@@ -47,18 +47,17 @@ public class SimpleJaxWS {
 	return usersList;
     }
 
-    @WebMethod(operationName = "deleteUser")
-    public String deleteUser(@WebParam(name = "id") Long id) {
-	logger.info("received request to delete user for id [" + id + "]");
+    @WebMethod
+    public String deleteUser(@WebParam(name = "ocd") String cod) {
+	logger.info("received request to delete user for id [" + cod + "]");
 
-	User u = entityManager.find(User.class, id);
+	User u = entityManager.find(User.class, new Long(cod));
 
 	entityManager.remove(u);
 	entityManager.flush();
 
 	StringBuilder sb = new StringBuilder("User ");
 	sb.append(u.getName());
-	sb.append(" ");
 	sb.append(" removed");
 
 	return sb.toString();
