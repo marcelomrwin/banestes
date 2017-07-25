@@ -48,7 +48,7 @@ public class SimpleJaxWS {
     }
 
     @WebMethod
-    public String deleteUser(@WebParam(name = "ocd") String cod) {
+    public String deleteUser(@WebParam(name = "cod") String cod) {
 	logger.info("received request to delete user for id [" + cod + "]");
 
 	User u = entityManager.find(User.class, new Long(cod));
