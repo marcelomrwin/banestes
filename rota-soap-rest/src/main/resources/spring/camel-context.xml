@@ -1,20 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:camel="http://camel.apache.org/schema/spring"
-       xsi:schemaLocation="
-       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-
-  <!-- Define a traditional camel context here -->
-  <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
-    <route id="simple-route">
-      <from id="route-timer" uri="timer:foo?period=2000"/>
-      <transform id="route-transform">
-        <method ref="myTransformer"/>
-      </transform>
-      <log id="route-log" message=">>> ${body}"/>
-    </route>
-  </camelContext>
-
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:camel="http://camel.apache.org/schema/spring" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+	<!-- Define a traditional camel context here -->
+	<camelContext id="rotaSoapRestContext" xmlns="http://camel.apache.org/schema/spring">
+		<dataFormats>
+			<xmljson id="xmljson" trimSpaces="true" skipNamespaces="true" removeNamespacePrefixes="true"/>
+		</dataFormats>
+		<!-- Configuração da API REST -->
+		<restConfiguration apiContextPath="/api-doc" bindingMode="off" component="servlet" contextPath="/camel" enableCORS="true">
+			<dataFormatProperty key="prettyPrint" value="true" />
+			<apiProperty key="host" value="" />
+			<apiProperty key="api.version" value="1.0.0" />
+			<apiProperty key="api.title" value="SOAP to REST Proxy" />
+			<apiProperty key="api.description" value="Camel Rest Example with Swagger that provides a SOAP to REST proxy service" />
+			<apiProperty key="api.contact.name" value="Marcelo Sales" />
+		</restConfiguration>
+		
+		<!-- Serviço REST para o contexto protocolo -->
+		<rest consumes="application/json" enableCORS="true" path="/user" produces="application/json">
+			<description>Rest Services for User</description>
+			<post consumes="application/x-www-form-urlencoded">
+				<description>Criar Usuario</description>
+				<param dataType="string" description="Nome do usuário" name="name" required="true" type="formData" />
+				<to id="createUserRoute" uri="direct:createUserRoute" />
+			</post>
+			<get>
+				<description>Listar Usuarios</description>
+				<to id="listUserRoute" uri="direct:listUserRoute" />
+			</get>
+			<delete consumes="application/x-www-form-urlencoded">
+				<description>Excluir Usuario</description>
+				<param dataType="string" description="codigo do usuario" name="cod" required="true" type="formData" />
+				<to id="deleteUserRoute" uri="direct:deleteUserRoute" />
+			</delete>
+		</rest>
+		
+		<route id="rotaSoapRestCreate">
+			<camel:from id="fromRotaSoapRestCreate" uri="direct:createUserRoute" />
+			<camel:setBody>
+				<camel:simple>            
+            &lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:jax="http://jaxws.ejb.redhat.com/"&gt;
+			   &lt;soapenv:Header/&gt;
+			   &lt;soapenv:Body&gt;
+			      &lt;jax:addUser&gt;			         
+			         &lt;name&gt;${in.headers.name}&lt;/name&gt;
+			      &lt;/jax:addUser&gt;
+			   &lt;/soapenv:Body&gt;
+			&lt;/soapenv:Envelope&gt; </camel:simple>
+			</camel:setBody>
+			<camel:log message=">>> send create body ${body} "/>
+			<camel:setHeader headerName="CamelHttpMethod">
+				<camel:constant>POST</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Content-Type">
+				<camel:constant>text/xml;charset=UTF-8</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Accept-Encoding">
+				<camel:constant>gzip,deflate</camel:constant>
+			</camel:setHeader>
+			<camel:to uri="http4://simple-ejb-jaxws.banestes.svc:8080/SimpleJaxWS?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+			<setHeader headerName="CamelHttpResponseCode" id="response201CreateHeader">
+				<constant>201</constant>
+			</setHeader>
+			<to uri="direct:routeOutput"/>
+		</route>
+		
+		<route id="rotaSoapRestGet">
+			<camel:from id="fromRotaSoapRestGet" uri="direct:listUserRoute" />
+			<camel:setBody>
+				<camel:simple>            
+            &lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:jax="http://jaxws.ejb.redhat.com/"&gt;
+			   &lt;soapenv:Header/&gt;
+			   &lt;soapenv:Body&gt;			      
+			      &lt;jax:getUsers/&gt;
+			   &lt;/soapenv:Body&gt;
+			&lt;/soapenv:Envelope&gt;</camel:simple>
+			</camel:setBody>
+			<camel:log message=">>> send get body ${body} "/>
+			<camel:setHeader headerName="CamelHttpMethod">
+				<camel:constant>POST</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Content-Type">
+				<camel:constant>text/xml;charset=UTF-8</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Accept-Encoding">
+				<camel:constant>gzip,deflate</camel:constant>
+			</camel:setHeader>
+			<camel:log message=">>> invoke soap endpoint [simple-ejb-jaxws.banestes.svc:8080/SimpleJaxWS?bridgeEndpoint=true&amp;throwExceptionOnFailure=false]" />
+			<camel:to uri="http4://simple-ejb-jaxws.banestes.svc:8080/SimpleJaxWS?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+			<setHeader headerName="CamelHttpResponseCode">
+				<constant>200</constant>
+			</setHeader>
+			<to uri="direct:routeOutput"/>
+		</route>
+		
+		<route id="rotaSoapRestDelete">
+			<camel:from id="fromRotaSoapRestDelete" uri="direct:deleteUserRoute" />
+			<camel:log message=">>> headers ${in.headers}"/>			
+			<camel:setBody>
+				<camel:simple>            
+            &lt;soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:jax="http://jaxws.ejb.redhat.com/"&gt;
+			   &lt;soapenv:Header/&gt;
+			   &lt;soapenv:Body&gt;
+			      &lt;jax:deleteUser&gt;			         
+			         &lt;cod&gt;${in.headers.cod}&lt;/cod&gt;
+			      &lt;/jax:deleteUser&gt;
+			   &lt;/soapenv:Body&gt;
+			&lt;/soapenv:Envelope&gt; </camel:simple>
+			</camel:setBody>
+			<camel:log message=">>> send delete body ${body} "/>						
+			<camel:setHeader headerName="CamelHttpMethod">
+				<camel:constant>POST</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Content-Type">
+				<camel:constant>text/xml;charset=UTF-8</camel:constant>
+			</camel:setHeader>
+			<camel:setHeader headerName="Accept-Encoding">
+				<camel:constant>gzip,deflate</camel:constant>
+			</camel:setHeader>
+			<camel:to uri="http4://simple-ejb-jaxws.banestes.svc:8080/SimpleJaxWS?bridgeEndpoint=true&amp;throwExceptionOnFailure=false" />
+			<camel:log message=">>> return from endpoint ${body}" />
+			<setHeader headerName="CamelHttpResponseCode">
+				<constant>200</constant>
+			</setHeader>
+			<to uri="direct:routeOutput"/>						
+		</route>
+		
+		<route id="routeOutput">
+		<from id="routeOutputRoute" uri="direct:routeOutput"/>
+		<camel:setBody>
+				<camel:xpath>//return</camel:xpath>
+			</camel:setBody>
+			<camel:log message=">>> result extracted body ${body}" />
+			<camel:setBody>
+				<camel:simple>            
+            		&lt;result&gt;${body}&lt;/result&gt;
+				</camel:simple>
+			</camel:setBody>
+			<camel:log message=">>> result after completion ${body}" />
+			<marshal ref="xmljson" />
+		</route>
+	</camelContext>
 </beans>
