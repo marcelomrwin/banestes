@@ -34,13 +34,13 @@ public class SimpleJaxWS {
     @SuppressWarnings("unchecked")
     @WebMethod
     public List<User> getUsers() {
-	Query query = entityManager.createQuery("select u from User u");
+	Query query = entityManager.createQuery("select u from User u order by u.id");
 	List<User> usersList = query.getResultList();
 	return usersList;
     }
 
     @WebMethod
-    public void deleteUser(Long id) {
+    public void deleteUser(@WebParam(name = "id") Long id) {
 	User u = entityManager.find(User.class, id);
 	entityManager.remove(u);
 	entityManager.flush();
