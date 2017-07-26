@@ -23,8 +23,7 @@
 		<property name="acknowledgementMode" value="1" />
 	</bean>
 
-	<bean id="oracleQueue" class="org.apache.camel.component.jms.JmsComponent">
-		<!-- <property name="connectionFactory" ref="oracleQueueCredentials" /> -->
+	<bean id="oracleQueue" class="org.apache.camel.component.jms.JmsComponent">		
 		<property name="connectionFactory">
 			<bean class="org.springframework.jms.connection.UserCredentialsConnectionFactoryAdapter">
 				<property name="targetConnectionFactory">
@@ -55,7 +54,13 @@
 			<camel:from uri="oracleQueue:queue:ORACLE_QUEUE" />
 			<camel:log message=">>> Received message from Oracle AQ ${body} sending to activemq" />
 			<camel:to uri="activemq:queue:inboundOracleAQqueue?username=redhat&amp;password=redhat123" />
-		</route>		
+		</route>
+		
+		<route>
+            <from uri="activemq:queue:inboundOracleAQqueue?username=redhat&amp;password=redhat123" />
+            <to uri="log:oracleQueue.inbound.got_a_queue_message?level=WARN"/>
+        </route>
+        		
 	</camelContext>
 
 </beans>

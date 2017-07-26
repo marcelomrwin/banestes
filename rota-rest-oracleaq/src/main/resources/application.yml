@@ -1,0 +1,33 @@
+server:
+  port: 8080
+  address: 0.0.0.0
+    
+camel:
+  springboot:
+    name: rota-rest-oracleaq
+    
+  context: 
+    endpoint: 'rota-rest-oracleaq'
+    path: '/camel'
+  handler:
+    api:
+      id: 'invite'
+      path: '/api-doc'
+      title: 'Banestes REST API'
+      description: 'API de transferência Banestes'
+      version: '1.0.0'
+      contact: 'masales@redhat.com'
+      port: 80
+      address: rota-rest-oracleaq-banestes.apps.ocp.rhbrlab.com
+
+logging:
+  config: 'classpath:logback.xml'
+
+management:
+  port: 8082
+  address: 0.0.0.0
+
+endpoints:
+  enabled: false
+  health:
+    enabled: true    

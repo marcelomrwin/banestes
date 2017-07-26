@@ -1,20 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:camel="http://camel.apache.org/schema/spring"
-       xsi:schemaLocation="
-       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
-       http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:camel="http://camel.apache.org/schema/spring" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-  <!-- Define a traditional camel context here -->
-  <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
-    <route id="simple-route">
-      <from id="route-timer" uri="timer:foo?period=2000"/>
-      <transform id="route-transform">
-        <method ref="myTransformer"/>
-      </transform>
-      <log id="route-log" message=">>> ${body}"/>
-    </route>
-  </camelContext>
+	<bean id="oracleQueue" class="org.apache.camel.component.jms.JmsComponent">
+		<property name="connectionFactory">
+			<bean class="org.springframework.jms.connection.UserCredentialsConnectionFactoryAdapter">
+				<property name="targetConnectionFactory">
+					<bean class="oracle.jms.AQjmsFactory" factory-method="getQueueConnectionFactory">
+						<constructor-arg index="0">
+							<value>jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP) (HOST=35.196.29.163) (PORT=1521)) (CONNECT_DATA=(SID=xe)))</value>
+						</constructor-arg>
+						<constructor-arg index="1" type="java.util.Properties">
+							<value></value>
+						</constructor-arg>
+					</bean>
+				</property>
+				<property name="username">
+					<value>BANESTES</value>
+				</property>
+				<property name="password">
+					<value>redhat123</value>
+				</property>
+			</bean>
+		</property>
+	</bean>
+
+	<!-- Configuração do conversor para JSON -->
+	<bean class="org.apache.camel.component.gson.GsonDataFormat" id="toGson">
+		<property name="fieldNamingPolicy" value="LOWER_CASE_WITH_UNDERSCORES" />
+		<property name="dateFormatPattern" value="HH:mm:ss dd/MM/yyyy" />
+		<property name="prettyPrint" value="true" />
+		<property name="serializeNulls" value="false" />
+	</bean>
+
+	<camelContext id="camelContextRestToOracleAQ" xmlns="http://camel.apache.org/schema/spring">
+		<route id="oraclaAqPublishRoute">
+			<from uri="direct:notificarOracleAQ" />
+			<marshal id="marshallJSON" ref="toGson" />
+			<camel:convertBodyTo type="java.lang.String" />
+			<removeHeaders id="adjustHeaders" pattern="*" />
+			<to uri="oracleQueue:queue:ORACLE_QUEUE" />
+		</route>
+	</camelContext>
 
 </beans>
