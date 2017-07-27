@@ -63,4 +63,20 @@ public class SimpleJaxWS {
 	return sb.toString();
     }
 
+    @WebMethod
+    public String atualizar(@WebParam(name = "cod") String cod, @WebParam(name = "name") String name) {
+	logger.info("received request to delete user for id [" + cod + "]");
+
+	User u = entityManager.find(User.class, new Long(cod));
+	u.setName(name);
+	entityManager.merge(u);
+	entityManager.flush();
+
+	StringBuilder sb = new StringBuilder("User ");
+	sb.append(u.getName());
+	sb.append(" updated");
+
+	return sb.toString();
+    }
+
 }
