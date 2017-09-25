@@ -16,7 +16,7 @@ public class TransferenciaResponse {
     public TransferenciaResponse() {
 	super();
 	this.data = new Date();
-	this.authenticacao = RandomStringUtils.random(16);
+	this.authenticacao = RandomStringUtils.randomAscii(16);
     }
 
     public TransferenciaResponse(Transferencia transferencia) {

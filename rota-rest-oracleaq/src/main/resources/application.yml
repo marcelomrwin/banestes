@@ -11,7 +11,7 @@ camel:
     path: '/camel'
   handler:
     api:
-      id: 'invite'
+      id: 'rota-rest-oracleaq'
       path: '/api-doc'
       title: 'Banestes REST API'
       description: 'API de transferência Banestes'
